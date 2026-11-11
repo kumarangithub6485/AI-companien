@@ -1,6 +1,7 @@
 "use client";
 import { useMemo, useState } from "react";
 import { buildDays, describe, findDrivers, MIN_DAYS, partOfDay, PARTS, type Driver } from "@/lib/insights";
+import { SUMMARY_PROMPT } from "@/lib/prompts";
 import { AGG_LEVELS, fmtDate, isDemo, shiftDate, type Child, type Entry } from "@/lib/types";
 
 type Props = { child: Child; date: string; entries: Entry[]; onPick: (date: string) => void };
@@ -21,7 +22,7 @@ export default function Insights({ child, date, entries, onPick }: Props) {
   if (!days.length) return <div className="card empty">No records for {child.name} yet. Insights appear once a few days are logged.</div>;
 
   const aggDays = days.filter((d) => d.level > 0).length;
-  const window = Array.from({ length: range }, (_, i) => shiftDate(date, i - range + 1));
+  const span = Array.from({ length: range }, (_, i) => shiftDate(date, i - range + 1));
   const up = drivers.filter((d) => d.diff > 0);
   const down = drivers.filter((d) => d.diff < 0);
   const solid = (ds: Driver[]) => ds.filter((d) => d.evidence !== "weak");
@@ -38,6 +39,17 @@ export default function Insights({ child, date, entries, onPick }: Props) {
       ...drivers.slice(0, 12).map((d) => `${d.lag ? "[previous day] " : ""}${d.label}: aggression on ${d.withAgg}/${d.withN} days with it vs ${d.withoutAgg}/${d.withoutN} without (evidence: ${d.evidence})`),
       `Aggression episodes by time of day: ${parts.map((x) => `${x.p} ${x.n}`).join(", ")}`,
     ].join("\n");
+    if (isDemo()) {
+      try {
+        const sample = await (window as any).claude?.use?.("sample");
+        const out = sample && (await sample(`${SUMMARY_PROMPT}\n\n${stats}`, { cache: false }));
+        setSummary(out?.text?.trim() || "The AI summary is not available in this preview right now.");
+      } catch {
+        setSummary("The AI summary is not available in this preview right now.");
+      }
+      setBusy(false);
+      return;
+    }
     try {
       const res = await fetch("/api/summary", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ stats }) });
       setSummary(res.ok ? (await res.json()).text : res.status === 503 ? "AI summaries need an API key to be set up. The findings below do not depend on it." : "The AI summary could not be created just now. Try again in a moment.");
@@ -88,7 +100,7 @@ export default function Insights({ child, date, entries, onPick }: Props) {
         <div className="trend">
           <div className="yax"><span>calm</span><span>mild</span><span>moderate</span><span>severe</span></div>
           <div className="plot">
-            {window.map((d) => {
+            {span.map((d) => {
               const day = byDate.get(d);
               const tip = `${fmtDate(d)}: ${day ? AGG_LEVELS[day.level] === "none" ? "calm" : AGG_LEVELS[day.level] : "not logged"}`;
               return (
@@ -98,7 +110,7 @@ export default function Insights({ child, date, entries, onPick }: Props) {
               );
             })}
           </div>
-          <div className="xax"><span>{fmtDate(window[0], { day: "numeric", month: "short" })}</span><span>{fmtDate(date, { day: "numeric", month: "short" })}</span></div>
+          <div className="xax"><span>{fmtDate(span[0], { day: "numeric", month: "short" })}</span><span>{fmtDate(date, { day: "numeric", month: "short" })}</span></div>
         </div>
         <p className="muted" style={{ marginTop: 8 }}>A grey dash is a logged day with no aggression. A gap is a day nothing was logged.</p>
       </section>
@@ -109,7 +121,7 @@ export default function Insights({ child, date, entries, onPick }: Props) {
             <h2>What goes with aggression for {child.name}</h2>
             <p className="sub">How often aggression happened on days with each factor, against all other logged days.</p>
           </div>
-          {days.length >= MIN_DAYS && !isDemo() && <button className="btn" onClick={askAI} disabled={busy}>{busy ? "Writing…" : "Explain with AI"}</button>}
+          {days.length >= MIN_DAYS && <button className="btn" onClick={askAI} disabled={busy}>{busy ? "Writing…" : "Explain with AI"}</button>}
         </div>
         {days.length < MIN_DAYS ? (
           <p className="notice">{days.length} of {MIN_DAYS} days logged. Patterns from fewer days are too unreliable to show, so keep recording daily.</p>

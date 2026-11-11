@@ -71,6 +71,14 @@ export function localExtract(transcript: string): Extracted[] {
       out.push({ column: isNap ? "Nap" : "Sleep", value, time });
     } else if ((m = c.match(/\b(?:went|go|gone|going|trip|visit(?:ed)?|walk(?:ed)?)\b(?: (?:out|over))?(?: to| in)?(?: the| a)? (.+)/))) {
       out.push({ column: "Outing", value: neg ? "none" : clean(m[1]) || "yes", time });
+    } else if (/\b(had|ate|eat|eats|eaten|drank|drink)\b/.test(c) && clean(c).replace(/\b(my|son|daughter|eat|eats|drank|drink)\b/g, " ").trim()) {
+      // "morning had a dosa": no meal named, so pick it from the time of day.
+      const h = time ? Number(time.slice(0, 2)) : -1;
+      const col = h < 0 ? "Food" : h < 11 ? "Breakfast" : h < 16 ? "Lunch" : h < 18 ? "Snacks" : "Dinner";
+      out.push({ column: col, value: neg ? "no" : clean(c).replace(/\b(my|son|daughter|eat|eats|drank|drink)\b/g, " ").replace(/\s+/g, " ").trim(), time });
+    } else if (out.length && c.split(" ").length <= 3 && !["none", "no", "yes", "skipped"].includes(out[out.length - 1].value) && out[out.length - 1].column !== AGG) {
+      // A short leftover such as "idli" after "had dosa and idli" belongs to the previous item.
+      out[out.length - 1].value += ` and ${clean(c) || c}`;
     } else if (/\b(calm|happy|cheerful|sad|anxious|upset|tired|restless|irritable|cranky)\b/.test(c)) {
       out.push({ column: "Mood", value: c.match(/\b(calm|happy|cheerful|sad|anxious|upset|tired|restless|irritable|cranky)\b/)![1], time });
     } else if (c.split(" ").length >= 2) {

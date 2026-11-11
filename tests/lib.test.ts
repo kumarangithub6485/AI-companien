@@ -48,3 +48,7 @@ test("fisher exact test", () => {
   assert.ok(Math.abs(fisher(3, 1, 1, 3) - 0.4857) < 1e-3);
   assert.ok(Math.abs(fisher(2, 2, 2, 2) - 1) < 1e-9);
 });
+
+test("meal is inferred from the time of day, and short leftovers join the previous item", () => {
+  assert.deepEqual(localExtract("my son morning had a dosa and itly"), [{ column: "Breakfast", value: "dosa and itly", time: "09:00" }]);
+});

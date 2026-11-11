@@ -1,8 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { SUMMARY_PROMPT } from "@/lib/prompts";
 
-const SYSTEM = `You help caregivers at a centre for children with special needs read a table of statistics about one child's aggression. Each line compares how often aggression happened on days with a factor against days without it.
-
-Write a short summary (under 150 words) in plain, warm language for a caregiver, not a statistician: the two or three factors that stand out most, including any that seem protective, and one practical thing worth trying or watching. These are patterns from a small number of days, not proof of cause, so say so once and suggest discussing them with the child's therapist. Mention when a pattern rests on very few days. Plain sentences only, no headings or bullet points. Use only the numbers given.`;
 
 export async function POST(req: Request) {
   if (!process.env.ANTHROPIC_API_KEY && !process.env.ANTHROPIC_AUTH_TOKEN) {
@@ -18,7 +16,7 @@ export async function POST(req: Request) {
       max_tokens: 16000,
       betas: ["server-side-fallback-2026-07-01"],
       fallbacks: "default",
-      system: SYSTEM,
+      system: SUMMARY_PROMPT,
       messages: [{ role: "user", content: stats }],
       output_config: { effort: "low" },
     });

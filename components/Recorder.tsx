@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { localExtract } from "@/lib/localExtract";
+import { EXTRACT_PROMPT } from "@/lib/prompts";
 import { uid } from "@/lib/store";
 import { AGG, AGG_LEVELS, canonicalColumn, fmtDate, isDemo, type Child, type Data, type Extracted } from "@/lib/types";
 
@@ -115,12 +116,22 @@ export default function Recorder({ child, date, columns, update, onSaved }: Prop
     setNote("");
     let result: Extracted[] | null = null;
     if (isDemo()) {
-      setNote("Preview: simple English keyword rules were used here. The real app uses AI for this step, which also understands Tamil and free-form speech.");
-      setRows(localExtract(text).map((r) => ({ ...r, column: canonicalColumn(r.column, [AGG, ...columns]) })));
-      setBusy(false);
-      return;
-    }
-    try {
+      try {
+        const sample = await (window as any).claude?.use?.("sample");
+        if (sample) {
+          const out = await sample.json(
+            `${EXTRACT_PROMPT}\n\nReply with JSON only, in this shape: {"observations":[{"column":"...","value":"...","time":"HH:MM" or null}]}\n\nExisting columns: ${columns.length ? columns.join(", ") : "(none yet)"}\n\nCaregiver's note:\n${text}`,
+            { cache: false },
+          );
+          if (Array.isArray(out?.observations)) {
+            result = out.observations
+              .filter((o: any) => o && typeof o.column === "string" && typeof o.value === "string")
+              .map((o: any) => ({ column: o.column, value: o.value, time: typeof o.time === "string" && /^\d{2}:\d{2}$/.test(o.time) ? o.time : null }));
+          }
+        }
+      } catch {}
+      if (!result) setNote("The AI was not available in this preview (it asks for permission the first time), so simple English keyword rules were used. Check each line before saving.");
+    } else try {
       const res = await fetch("/api/extract", {
         method: "POST",
         headers: { "content-type": "application/json" },
