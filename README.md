@@ -10,7 +10,7 @@ A web app for caregivers of children with special needs. Tap the microphone, des
 4. **Timeline** shows the selected day in time order. **Table** shows every day and downloads as CSV.
 5. **Insights** shows aggression by day, the factors linked to more or less aggression (same day and the day before), and the time of day episodes happen.
 
-To look around before logging real data, open **Table** and choose **Load sample data**.
+To look around before logging real data, open **Table** and choose **Load made-up sample child**.
 
 ## Running it
 

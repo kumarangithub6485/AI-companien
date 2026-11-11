@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import { useData, uid } from "@/lib/store";
-import { fmtDate, isDemo, shiftDate, toDateStr } from "@/lib/types";
+import { fmtDate, shiftDate, toDateStr } from "@/lib/types";
 import Recorder from "@/components/Recorder";
 import Timeline from "@/components/Timeline";
 import DataTable from "@/components/DataTable";
@@ -12,7 +12,7 @@ type Tab = (typeof TABS)[number];
 
 export default function Home() {
   const { data, update, ready } = useData();
-  const [tab, setTab] = useState<Tab>(() => (isDemo() ? "Insights" : "Record"));
+  const [tab, setTab] = useState<Tab>("Record");
   const [newName, setNewName] = useState<string | null>(null);
   const [date, setDate] = useState(() => toDateStr(new Date()));
   const [childId, setChildId] = useState("");
@@ -73,9 +73,9 @@ export default function Home() {
 
       {!child && tab !== "Table" ? (
         <div className="card empty">
-          <p style={{ marginBottom: 12 }}>Add a child to start recording their day.</p>
+          <p style={{ marginBottom: 12 }}>Add a child to start recording their day. The table starts empty; its columns come only from what you say.</p>
           <button className="btn primary" onClick={addChild}>+ Add child</button>
-          <p className="muted" style={{ marginTop: 12 }}>Want to look around first? Open the Table tab and load the sample data.</p>
+          <p className="muted" style={{ marginTop: 12 }}>Want to see filled-in charts first? Open the Table tab and load the made-up sample child.</p>
         </div>
       ) : (
         <>
