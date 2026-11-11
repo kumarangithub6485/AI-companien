@@ -12,6 +12,8 @@ type Props = {
   onSaved: () => void;
 };
 
+const LANGS = [["en-IN", "English"], ["ta-IN", "தமிழ்"]] as const;
+
 export default function Recorder({ child, date, columns, update, onSaved }: Props) {
   const [text, setText] = useState("");
   const [interim, setInterim] = useState("");
@@ -20,6 +22,7 @@ export default function Recorder({ child, date, columns, update, onSaved }: Prop
   const [rows, setRows] = useState<Extracted[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState("");
+  const [lang, setLang] = useState("en-IN");
   const rec = useRef<any>(null);
   const wantOn = useRef(false);
 
@@ -29,7 +32,6 @@ export default function Recorder({ child, date, columns, update, onSaved }: Prop
     const r = new SR();
     r.continuous = true;
     r.interimResults = true;
-    r.lang = navigator.language || "en-US";
     r.onresult = (ev: any) => {
       let live = "";
       for (let i = ev.resultIndex; i < ev.results.length; i++) {
@@ -55,6 +57,15 @@ export default function Recorder({ child, date, columns, update, onSaved }: Prop
     return () => { wantOn.current = false; try { r.abort(); } catch {} };
   }, []);
 
+  useEffect(() => {
+    try { const saved = localStorage.getItem("speech-lang"); if (saved) setLang(saved); } catch {}
+  }, []);
+  const pickLang = (l: string) => {
+    setLang(l);
+    try { localStorage.setItem("speech-lang", l); } catch {}
+    if (listening) { wantOn.current = false; rec.current?.stop(); }
+  };
+
   const toggle = () => {
     if (!rec.current) return;
     if (listening) {
@@ -63,6 +74,7 @@ export default function Recorder({ child, date, columns, update, onSaved }: Prop
     } else {
       setNote("");
       wantOn.current = true;
+      rec.current.lang = lang;
       try { rec.current.start(); setListening(true); } catch {}
     }
   };
@@ -83,6 +95,10 @@ export default function Recorder({ child, date, columns, update, onSaved }: Prop
       else setNote("The AI could not be reached, so simple keyword rules were used. Check each line before saving.");
     } catch {
       setNote("You appear to be offline, so simple keyword rules were used. Check each line before saving.");
+    }
+    if (!result && /[\u0B80-\u0BFF]/.test(text)) {
+      setNote("Tamil notes need the AI to translate them, and it is not available right now. Nothing was picked out; add lines by hand or try again once the AI is set up.");
+      result = [];
     }
     result ??= localExtract(text);
     setRows(result.map((r) => ({ ...r, column: canonicalColumn(r.column, [AGG, ...columns]) })));
@@ -108,7 +124,7 @@ export default function Recorder({ child, date, columns, update, onSaved }: Prop
   return (
     <section className="card">
       <h2>Record {child.name}'s day</h2>
-      <p className="sub">{fmtDate(date, { weekday: "long", day: "numeric", month: "long" })}. Tap the microphone and talk about meals, outings, sleep, snacks and behaviour.</p>
+      <p className="sub">{fmtDate(date, { weekday: "long", day: "numeric", month: "long" })}. Tap the microphone and talk about meals, outings, sleep, snacks and behaviour, in Tamil or English. Results are always shown in English.</p>
 
       <div className="mic-wrap">
         <button className={`mic ${listening ? "on" : ""}`} onClick={toggle} disabled={!supported} aria-label={listening ? "Stop listening" : "Start listening"}>
@@ -117,6 +133,11 @@ export default function Recorder({ child, date, columns, update, onSaved }: Prop
           </svg>
         </button>
         <span className="sub">{!supported ? "This browser cannot listen. Type the note below (Chrome supports speech)." : listening ? "Listening… tap to stop" : "Tap to speak"}</span>
+        <div className="lang" role="group" aria-label="Language you will speak">
+          {LANGS.map(([code, label]) => (
+            <button key={code} className="btn small" aria-pressed={lang === code} onClick={() => pickLang(code)}>{label}</button>
+          ))}
+        </div>
         <span className="interim">{interim}</span>
       </div>
 

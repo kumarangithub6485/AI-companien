@@ -83,6 +83,8 @@ textarea.field { width: 100%; resize: vertical; min-height: 110px; }
 .mic svg { width: 40px; height: 40px; }
 .mic.on { background: var(--danger); animation: pulse 1.4s ease-in-out infinite; }
 @keyframes pulse { 50% { box-shadow: 0 0 0 14px color-mix(in srgb, var(--danger) 18%, transparent); } }
+.lang { display: flex; gap: 6px; }
+.lang .btn[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 600; }
 .interim { color: var(--text-3); font-style: italic; min-height: 1.5em; font-size: 14px; }
 .review { display: grid; gap: 8px; margin: 12px 0; }
 .review-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) 136px 40px; gap: 6px; }

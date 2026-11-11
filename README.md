@@ -28,6 +28,7 @@ When hosting (for example on Vercel), set `ANTHROPIC_API_KEY` as an environment 
 
 ## Things to know
 
+- **Tamil and English**: choose English or தமிழ் under the microphone before speaking (the browser can only listen for one language at a time; English words inside Tamil speech are usually still picked up). Columns and values are always shown in English. Translating Tamil notes needs the AI key; the built-in keyword rules are English-only.
 - **Speech** uses the browser's built-in recognition, which works in Chrome and Edge (and Safari on recent versions). Other browsers fall back to typing.
 - **Storage** is this browser on this device. There is no login or shared database yet, so records are not visible on other devices. Use **Download backup** on the Table screen regularly; **Restore backup** loads it elsewhere.
 - **Privacy**: with the AI turned on, the text of each note is sent to Anthropic's API to be read. The child's name is not sent, so avoid saying full names in notes.
