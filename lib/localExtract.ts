@@ -71,6 +71,10 @@ export function localExtract(transcript: string): Extracted[] {
       out.push({ column: isNap ? "Nap" : "Sleep", value, time });
     } else if ((m = c.match(/\b(?:went|go|gone|going|trip|visit(?:ed)?|walk(?:ed)?)\b(?: (?:out|over))?(?: to| in)?(?: the| a)? (.+)/))) {
       out.push({ column: "Outing", value: neg ? "none" : clean(m[1]) || "yes", time });
+    } else if ((m = c.match(/\b(therapy|class|bath|fever|seizure|medicine|medication|tablet|vomit(?:ed|ing)?|headache)\b/))) {
+      // "had therapy" is an event, not a meal.
+      const word = m[1].startsWith("vomit") ? "vomiting" : m[1] === "medicine" || m[1] === "tablet" ? "medication" : m[1];
+      out.push({ column: word[0].toUpperCase() + word.slice(1), value: neg ? "no" : "yes", time });
     } else if (/\b(had|ate|eat|eats|eaten|drank|drink)\b/.test(c) && clean(c).replace(/\b(my|son|daughter|eat|eats|drank|drink)\b/g, " ").trim()) {
       // "morning had a dosa": no meal named, so pick it from the time of day.
       const h = time ? Number(time.slice(0, 2)) : -1;

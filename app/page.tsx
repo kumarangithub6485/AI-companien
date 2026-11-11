@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useData, uid } from "@/lib/store";
 import { fmtDate, shiftDate, toDateStr } from "@/lib/types";
 import Recorder from "@/components/Recorder";
@@ -16,6 +16,25 @@ export default function Home() {
   const [newName, setNewName] = useState<string | null>(null);
   const [date, setDate] = useState(() => toDateStr(new Date()));
   const [childId, setChildId] = useState("");
+  const [today, setToday] = useState(() => toDateStr(new Date()));
+
+  // The date is always today unless the user picks another day. If the app is left open
+  // overnight, move on to the new day when they come back to it.
+  const dateRef = useRef(date);
+  dateRef.current = date;
+  useEffect(() => {
+    const sync = () => {
+      const now = toDateStr(new Date());
+      setToday((prev) => {
+        if (prev !== now && dateRef.current === prev) setDate(now);
+        return now;
+      });
+    };
+    document.addEventListener("visibilitychange", sync);
+    window.addEventListener("focus", sync);
+    const timer = setInterval(sync, 60_000);
+    return () => { document.removeEventListener("visibilitychange", sync); window.removeEventListener("focus", sync); clearInterval(timer); };
+  }, []);
 
   useEffect(() => {
     if (!data.children.some((c) => c.id === childId)) setChildId(data.children[0]?.id ?? "");
@@ -53,6 +72,7 @@ export default function Home() {
             <button className="btn icon" aria-label="Previous day" onClick={() => setDate(shiftDate(date, -1))}>‹</button>
             <input className="field" type="date" aria-label="Date" value={date} onChange={(e) => e.target.value && setDate(e.target.value)} />
             <button className="btn icon" aria-label="Next day" onClick={() => setDate(shiftDate(date, 1))}>›</button>
+            {date !== today && <button className="btn" onClick={() => setDate(today)}>Today</button>}
           </span>
         </div>
       </header>
@@ -80,11 +100,11 @@ export default function Home() {
       ) : (
         <>
           {tab === "Record" && child && (
-            <Recorder child={child} date={date} columns={columns} update={update} onSaved={() => setTab("Timeline")} />
+            <Recorder child={child} date={date} today={today} onToday={() => setDate(today)} dayEntries={entries.filter((e) => e.date === date)} columns={columns} update={update} onSaved={() => setTab("Timeline")} />
           )}
           {tab === "Timeline" && child && <Timeline child={child} date={date} entries={entries} update={update} />}
           {tab === "Table" && (
-            <DataTable child={child} entries={entries} data={data} update={update} today={toDateStr(new Date())}
+            <DataTable child={child} entries={entries} data={data} update={update} today={today}
               onPick={(d) => { setDate(d); setTab("Timeline"); }} onChild={setChildId} />
           )}
           {tab === "Insights" && child && <Insights child={child} date={date} entries={data.entries} onPick={setDate} />}

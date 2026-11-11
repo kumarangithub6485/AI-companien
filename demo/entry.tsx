@@ -24,7 +24,7 @@ try {
 
 createRoot(document.getElementById("root")!).render(
   <>
-    <p className="demo-banner">Preview. Add a child, then speak or type a note on the Record tab, in Tamil or English. Columns are created only from what you say.</p>
+    <p className="demo-banner">Preview. Add a child, then speak or type a note on the Record tab, in Tamil or English. Columns are created only from what you say, and the date is set to today for you.</p>
     <Home />
   </>,
 );

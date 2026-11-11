@@ -89,6 +89,12 @@ textarea.field { width: 100%; resize: vertical; min-height: 110px; }
 .review-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) 136px 40px; gap: 6px; }
 .review-row .new { border-color: var(--accent); }
 @media (max-width: 560px) { .review-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); padding-bottom: 8px; border-bottom: 1px solid var(--line); } }
+.daybar { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: center; margin: 6px 0 8px; }
+.daybar.past { background: var(--accent-soft); border-radius: 10px; padding: 8px 10px; }
+.already { margin-top: 16px; display: grid; gap: 8px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; font-size: 13px; overflow-wrap: anywhere; }
+.chip b { font-weight: 600; color: var(--text-2); margin-right: 4px; }
 .ask { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 14px; background: var(--accent-soft); border-radius: 10px; padding: 8px 10px; }
 .ask span { font-weight: 600; margin-right: 4px; }
 .tag-new { color: var(--accent); font-size: 12px; font-weight: 600; }

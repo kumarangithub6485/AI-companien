@@ -49,6 +49,10 @@ test("fisher exact test", () => {
   assert.ok(Math.abs(fisher(2, 2, 2, 2) - 1) < 1e-9);
 });
 
+test("events such as therapy are not mistaken for meals", () => {
+  assert.deepEqual(localExtract("he had therapy at 3 pm"), [{ column: "Therapy", value: "yes", time: "15:00" }]);
+});
+
 test("meal is inferred from the time of day, and short leftovers join the previous item", () => {
   assert.deepEqual(localExtract("my son morning had a dosa and itly"), [{ column: "Breakfast", value: "dosa and itly", time: "09:00" }]);
 });

@@ -3,11 +3,14 @@ import { useEffect, useRef, useState } from "react";
 import { localExtract } from "@/lib/localExtract";
 import { EXTRACT_PROMPT } from "@/lib/prompts";
 import { uid } from "@/lib/store";
-import { AGG, AGG_LEVELS, canonicalColumn, fmtDate, isDemo, type Child, type Data, type Extracted } from "@/lib/types";
+import { AGG, AGG_LEVELS, canonicalColumn, fmtDate, fmtTime, isDemo, type Child, type Data, type Entry, type Extracted } from "@/lib/types";
 
 type Props = {
   child: Child;
   date: string;
+  today: string;
+  onToday: () => void;
+  dayEntries: Entry[];
   columns: string[];
   update: (fn: (d: Data) => Data) => void;
   onSaved: () => void;
@@ -20,7 +23,7 @@ const needsTime = (r: Row) => !r.time && !r.unsure && !!r.value.trim() && !["no"
 
 const LANGS = [["en-IN", "English"], ["ta-IN", "தமிழ்"]] as const;
 
-export default function Recorder({ child, date, columns, update, onSaved }: Props) {
+export default function Recorder({ child, date, today, onToday, dayEntries, columns, update, onSaved }: Props) {
   const [text, setText] = useState("");
   const [interim, setInterim] = useState("");
   const [listening, setListening] = useState(false);
@@ -176,7 +179,12 @@ export default function Recorder({ child, date, columns, update, onSaved }: Prop
   return (
     <section className="card">
       <h2>Record {child.name}'s day</h2>
-      <p className="sub">{fmtDate(date, { weekday: "long", day: "numeric", month: "long" })}. Tap the microphone and talk about meals, outings, sleep, snacks and behaviour, in Tamil or English. Results are always shown in English.</p>
+      {date === today ? (
+        <p className="daybar"><strong>Today, {fmtDate(date, { weekday: "long", day: "numeric", month: "long" })}</strong><span className="sub">The date is set for you. Record as many times as you like; everything is added to today.</span></p>
+      ) : (
+        <p className="daybar past"><strong>{date < today ? "Adding to a past day" : "Adding to a future day"}: {fmtDate(date, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</strong><button className="btn small" onClick={onToday}>Back to today</button></p>
+      )}
+      <p className="sub">Tap the microphone and talk about meals, outings, sleep, snacks and behaviour, in Tamil or English. Results are always shown in English.</p>
 
       <div className="mic-wrap">
         <button className={`mic ${listening ? "on" : ""}`} onClick={toggle} disabled={!supported} aria-label={listening ? "Stop listening" : "Start listening"}>
@@ -200,6 +208,17 @@ export default function Recorder({ child, date, columns, update, onSaved }: Prop
         {text && <button className="btn" onClick={() => { setText(""); setRows(null); setNote(""); }}>Clear</button>}
       </div>
       {note && <p className="notice">{note}</p>}
+
+      {!rows && dayEntries.length > 0 && (
+        <div className="already">
+          <span className="sub">Already recorded for this day ({dayEntries.length}). New notes are added to these.</span>
+          <div className="chips">
+            {[...dayEntries].sort((a, b) => (a.time ?? "99").localeCompare(b.time ?? "99")).map((e) => (
+              <span className="chip" key={e.id}><b>{e.column}</b> {e.value}{e.time ? ` · ${fmtTime(e.time)}` : ""}</span>
+            ))}
+          </div>
+        </div>
+      )}
 
       {rows && (
         <>
