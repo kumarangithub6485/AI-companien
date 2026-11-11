@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { localExtract } from "@/lib/localExtract";
 import { uid } from "@/lib/store";
-import { AGG, AGG_LEVELS, canonicalColumn, fmtDate, type Child, type Data, type Extracted } from "@/lib/types";
+import { AGG, AGG_LEVELS, canonicalColumn, fmtDate, isDemo, type Child, type Data, type Extracted } from "@/lib/types";
 
 type Props = {
   child: Child;
@@ -44,7 +44,8 @@ export default function Recorder({ child, date, columns, update, onSaved }: Prop
     r.onerror = (ev: any) => {
       if (ev.error === "not-allowed" || ev.error === "service-not-allowed") {
         wantOn.current = false;
-        setNote("Microphone access was blocked. Allow it in the browser's site settings, or type the note instead.");
+        setListening(false);
+        setNote(isDemo() ? "The microphone is switched off in this preview. Type a note below to try it; speaking works in the real app." : "Microphone access was blocked. Allow it in the browser's site settings, or type the note instead.");
       }
     };
     // Browsers stop listening after a pause; keep going until the user taps stop.
@@ -84,6 +85,12 @@ export default function Recorder({ child, date, columns, update, onSaved }: Prop
     setBusy(true);
     setNote("");
     let result: Extracted[] | null = null;
+    if (isDemo()) {
+      setNote("Preview: simple English keyword rules were used here. The real app uses AI for this step, which also understands Tamil and free-form speech.");
+      setRows(localExtract(text).map((r) => ({ ...r, column: canonicalColumn(r.column, [AGG, ...columns]) })));
+      setBusy(false);
+      return;
+    }
     try {
       const res = await fetch("/api/extract", {
         method: "POST",

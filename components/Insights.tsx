@@ -1,7 +1,7 @@
 "use client";
 import { useMemo, useState } from "react";
 import { buildDays, describe, findDrivers, MIN_DAYS, partOfDay, PARTS, type Driver } from "@/lib/insights";
-import { AGG_LEVELS, fmtDate, shiftDate, type Child, type Entry } from "@/lib/types";
+import { AGG_LEVELS, fmtDate, isDemo, shiftDate, type Child, type Entry } from "@/lib/types";
 
 type Props = { child: Child; date: string; entries: Entry[]; onPick: (date: string) => void };
 
@@ -109,7 +109,7 @@ export default function Insights({ child, date, entries, onPick }: Props) {
             <h2>What goes with aggression for {child.name}</h2>
             <p className="sub">How often aggression happened on days with each factor, against all other logged days.</p>
           </div>
-          {days.length >= MIN_DAYS && <button className="btn" onClick={askAI} disabled={busy}>{busy ? "Writing…" : "Explain with AI"}</button>}
+          {days.length >= MIN_DAYS && !isDemo() && <button className="btn" onClick={askAI} disabled={busy}>{busy ? "Writing…" : "Explain with AI"}</button>}
         </div>
         {days.length < MIN_DAYS ? (
           <p className="notice">{days.length} of {MIN_DAYS} days logged. Patterns from fewer days are too unreliable to show, so keep recording daily.</p>

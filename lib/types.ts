@@ -15,6 +15,9 @@ export type Extracted = { column: string; value: string; time: string | null };
 
 export type Data = { children: Child[]; entries: Entry[] };
 
+/** True in the read-only preview build, where the server, downloads and dialogs are unavailable. */
+export const isDemo = () => typeof window !== "undefined" && !!(window as { CARE_DEMO?: boolean }).CARE_DEMO;
+
 export const AGG = "Aggression";
 export const AGG_LEVELS = ["none", "mild", "moderate", "severe"] as const;
 

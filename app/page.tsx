@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import { useData, uid } from "@/lib/store";
-import { fmtDate, shiftDate, toDateStr } from "@/lib/types";
+import { fmtDate, isDemo, shiftDate, toDateStr } from "@/lib/types";
 import Recorder from "@/components/Recorder";
 import Timeline from "@/components/Timeline";
 import DataTable from "@/components/DataTable";
@@ -12,7 +12,8 @@ type Tab = (typeof TABS)[number];
 
 export default function Home() {
   const { data, update, ready } = useData();
-  const [tab, setTab] = useState<Tab>("Record");
+  const [tab, setTab] = useState<Tab>(() => (isDemo() ? "Insights" : "Record"));
+  const [newName, setNewName] = useState<string | null>(null);
   const [date, setDate] = useState(() => toDateStr(new Date()));
   const [childId, setChildId] = useState("");
 
@@ -24,8 +25,10 @@ export default function Home() {
   const entries = useMemo(() => data.entries.filter((e) => e.childId === childId), [data.entries, childId]);
   const columns = useMemo(() => [...new Set(entries.map((e) => e.column))], [entries]);
 
-  const addChild = () => {
-    const name = window.prompt("Child's name")?.trim();
+  const addChild = () => setNewName("");
+  const saveChild = () => {
+    const name = newName?.trim();
+    setNewName(null);
     if (!name) return;
     const id = uid();
     update((d) => ({ ...d, children: [...d.children, { id, name }] }));
@@ -53,6 +56,14 @@ export default function Home() {
           </span>
         </div>
       </header>
+
+      {newName !== null && (
+        <form className="card row" onSubmit={(e) => { e.preventDefault(); saveChild(); }}>
+          <input id="new-child" className="field" style={{ flex: "1 1 160px" }} autoFocus placeholder="Child's name" aria-label="Child's name" value={newName} onChange={(e) => setNewName(e.target.value)} />
+          <button className="btn primary" type="submit" disabled={!newName.trim()}>Add</button>
+          <button className="btn" type="button" onClick={() => setNewName(null)}>Cancel</button>
+        </form>
+      )}
 
       <nav className="tabs" role="tablist">
         {TABS.map((t) => (

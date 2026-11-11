@@ -2,7 +2,7 @@
 import { useRef } from "react";
 import { download } from "@/lib/store";
 import { sampleData, SAMPLE_CHILD_ID } from "@/lib/sample";
-import { AGG, fmtDate, type Child, type Data, type Entry } from "@/lib/types";
+import { AGG, fmtDate, isDemo, type Child, type Data, type Entry } from "@/lib/types";
 
 type Props = {
   child?: Child;
@@ -58,7 +58,7 @@ export default function DataTable({ child, entries, data, today, update, onPick,
             <h2>{child ? `${child.name}: all days` : "All days"}</h2>
             <p className="sub">Columns appear as you mention new things. Tap a row to open that day.</p>
           </div>
-          <button className="btn" onClick={csv} disabled={!dates.length}>Download CSV</button>
+          {!isDemo() && <button className="btn" onClick={csv} disabled={!dates.length}>Download CSV</button>}
         </div>
         {!dates.length ? (
           <p className="empty">No records yet.</p>
@@ -84,13 +84,13 @@ export default function DataTable({ child, entries, data, today, update, onPick,
       <section className="card">
         <h2>Your data</h2>
         <p className="sub">Records are kept in this browser on this device only. Download a backup regularly, and use it to move to another device.</p>
-        <div className="row" style={{ marginTop: 12 }}>
+        {isDemo() ? <p className="notice">Backup, restore and CSV download are available in the real app, not in this preview.</p> : <div className="row" style={{ marginTop: 12 }}>
           <button className="btn" onClick={() => download("care-companion-backup.json", JSON.stringify(data), "application/json")}>Download backup</button>
           <button className="btn" onClick={() => file.current?.click()}>Restore backup</button>
           <input ref={file} type="file" accept="application/json" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) restore(f); e.target.value = ""; }} />
           <button className="btn" onClick={loadSample}>Load sample data</button>
           {child && <button className="btn danger" onClick={removeChild}>Delete {child.name}</button>}
-        </div>
+        </div>}
       </section>
     </>
   );
