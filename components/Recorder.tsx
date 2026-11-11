@@ -13,6 +13,11 @@ type Props = {
   onSaved: () => void;
 };
 
+type Row = Extracted & { unsure?: boolean };
+const QUICK = [["Morning", "09:00"], ["Afternoon", "14:00"], ["Evening", "18:00"], ["Night", "21:00"]] as const;
+/** Things that did not happen ("Snacks: no") have no time to ask about. */
+const needsTime = (r: Row) => !r.time && !r.unsure && !!r.value.trim() && !["no", "none", "skipped", "nil"].includes(r.value.trim().toLowerCase());
+
 const LANGS = [["en-IN", "English"], ["ta-IN", "தமிழ்"]] as const;
 
 export default function Recorder({ child, date, columns, update, onSaved }: Props) {
@@ -20,7 +25,7 @@ export default function Recorder({ child, date, columns, update, onSaved }: Prop
   const [interim, setInterim] = useState("");
   const [listening, setListening] = useState(false);
   const [supported, setSupported] = useState(true);
-  const [rows, setRows] = useState<Extracted[] | null>(null);
+  const [rows, setRows] = useState<Row[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState("");
   const [lang, setLang] = useState("en-IN");
@@ -152,11 +157,11 @@ export default function Recorder({ child, date, columns, update, onSaved }: Prop
     setBusy(false);
   };
 
-  const edit = (i: number, patch: Partial<Extracted>) => setRows((rs) => rs!.map((r, j) => (j === i ? { ...r, ...patch } : r)));
+  const edit = (i: number, patch: Partial<Row>) => setRows((rs) => rs!.map((r, j) => (j === i ? { ...r, ...patch } : r)));
 
   const save = () => {
     const clean = rows!
-      .map((r) => ({ ...r, column: canonicalColumn(r.column, [AGG, ...columns]), value: r.value.trim() }))
+      .map((r) => ({ column: canonicalColumn(r.column, [AGG, ...columns]), value: r.value.trim(), time: r.time }))
       .filter((r) => r.column && r.value);
     if (!clean.length) return;
     update((d) => ({
@@ -199,7 +204,7 @@ export default function Recorder({ child, date, columns, update, onSaved }: Prop
       {rows && (
         <>
           <h2 style={{ marginTop: 20 }}>Check before saving</h2>
-          <p className="sub">{rows.length ? "Fix anything that was misheard. New columns are outlined." : "Nothing could be picked out of that note. Add a line by hand or try again."}</p>
+          <p className="sub">{rows.length ? "Fix anything that was misheard, and give a time for each item so it lands in the right place on the timeline. New columns are outlined." : "Nothing could be picked out of that note. Add a line by hand or try again."}</p>
           <div className="review">
             {rows.map((r, i) => {
               const isNew = !!r.column && ![AGG, ...columns].some((c) => c.toLowerCase() === r.column.trim().toLowerCase());
@@ -215,6 +220,13 @@ export default function Recorder({ child, date, columns, update, onSaved }: Prop
                   )}
                   <input className="field" type="time" value={r.time ?? ""} onChange={(e) => edit(i, { time: e.target.value || null })} aria-label="Time" />
                   <button className="btn icon danger" onClick={() => setRows(rows.filter((_, j) => j !== i))} aria-label="Remove line">×</button>
+                  {needsTime(r) && (
+                    <div className="ask">
+                      <span>When did this happen?</span>
+                      {QUICK.map(([label, t]) => <button key={label} className="btn small" onClick={() => edit(i, { time: t })}>{label}</button>)}
+                      <button className="btn small" onClick={() => edit(i, { unsure: true })}>Not sure</button>
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -222,7 +234,8 @@ export default function Recorder({ child, date, columns, update, onSaved }: Prop
           </div>
           <div className="row">
             <button className="btn" onClick={() => setRows([...rows, { column: "", value: "", time: null }])}>+ Add line</button>
-            <button className="btn primary" onClick={save} disabled={!rows.some((r) => r.column.trim() && r.value.trim())}>Save to {fmtDate(date)}</button>
+            <button className="btn primary" onClick={save} disabled={!rows.some((r) => r.column.trim() && r.value.trim()) || rows.some(needsTime)}>Save to {fmtDate(date)}</button>
+            {rows.some(needsTime) && <span className="sub">{rows.filter(needsTime).length} item{rows.filter(needsTime).length === 1 ? "" : "s"} still need a time</span>}
           </div>
         </>
       )}
