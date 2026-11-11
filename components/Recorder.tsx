@@ -25,8 +25,25 @@ export default function Recorder({ child, date, columns, update, onSaved }: Prop
   const [lang, setLang] = useState("en-IN");
   const rec = useRef<any>(null);
   const wantOn = useRef(false);
+  const dict = useRef<any>(null); // preview build only: the host page's dictation service
 
   useEffect(() => {
+    if (isDemo()) {
+      setSupported(false);
+      let offs: (() => void)[] = [];
+      const use = (window as any).claude?.use;
+      Promise.resolve(use ? use("dictation") : null).then((d: any) => {
+        if (!d) return setNote("Speaking is not available in this preview on this device or browser (it needs Chrome or the Claude desktop app). Type a note below instead; speaking works in the real app.");
+        dict.current = d;
+        setSupported(true);
+        offs = [
+          d.onPartial((e: { text: string }) => setInterim(e.text)),
+          d.onFinal((e: { text: string }) => setText((p) => (p ? p + e.text : e.text.trimStart()))),
+          d.onState((e: { state: string }) => { setListening(e.state !== "idle"); if (e.state === "idle") setInterim(""); }),
+        ];
+      });
+      return () => offs.forEach((off) => off());
+    }
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SR) return setSupported(false);
     const r = new SR();
@@ -64,10 +81,22 @@ export default function Recorder({ child, date, columns, update, onSaved }: Prop
   const pickLang = (l: string) => {
     setLang(l);
     try { localStorage.setItem("speech-lang", l); } catch {}
-    if (listening) { wantOn.current = false; rec.current?.stop(); }
+    if (listening) { wantOn.current = false; rec.current?.stop(); dict.current?.stop(); }
   };
 
   const toggle = () => {
+    if (dict.current) {
+      if (listening) return void dict.current.stop();
+      setNote("");
+      dict.current.start({ language: lang.slice(0, 2) }).catch((e: { code?: string }) => {
+        if (e.code === "stopped" || e.code === "dismissed") return;
+        setNote(
+          e.code === "not_granted" ? "Microphone use was not allowed for this preview. Type the note instead, or allow it in the page's Permissions menu."
+          : e.code === "unavailable" ? (lang.startsWith("ta") ? "Tamil listening is not available in this preview. Switch to English here; Tamil is selectable in the real app." : "Speaking is not available for this account in the preview. Type the note instead.")
+          : "Listening could not start just now. Try again in a moment, or type the note.");
+      });
+      return;
+    }
     if (!rec.current) return;
     if (listening) {
       wantOn.current = false;
@@ -139,7 +168,7 @@ export default function Recorder({ child, date, columns, update, onSaved }: Prop
             {listening ? <rect x="6" y="6" width="12" height="12" rx="2" /> : <path d="M12 15a3.5 3.5 0 0 0 3.5-3.5v-6a3.5 3.5 0 0 0-7 0v6A3.5 3.5 0 0 0 12 15Zm6-3.5a1 1 0 1 0-2 0 4 4 0 0 1-8 0 1 1 0 1 0-2 0 6 6 0 0 0 5 5.9V20H8.5a1 1 0 1 0 0 2h7a1 1 0 1 0 0-2H13v-2.6a6 6 0 0 0 5-5.9Z" />}
           </svg>
         </button>
-        <span className="sub">{!supported ? "This browser cannot listen. Type the note below (Chrome supports speech)." : listening ? "Listening… tap to stop" : "Tap to speak"}</span>
+        <span className="sub">{!supported ? (isDemo() ? "Type the note below" : "This browser cannot listen. Type the note below (Chrome supports speech).") : listening ? "Listening… tap to stop" : "Tap to speak"}</span>
         <div className="lang" role="group" aria-label="Language you will speak">
           {LANGS.map(([code, label]) => (
             <button key={code} className="btn small" aria-pressed={lang === code} onClick={() => pickLang(code)}>{label}</button>

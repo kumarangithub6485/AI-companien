@@ -13,7 +13,7 @@ try {
 
 createRoot(document.getElementById("root")!).render(
   <>
-    <p className="demo-banner">Preview with made-up sample records. Type a note on the Record tab to try it. Speaking, Tamil translation and AI summaries work in the real app.</p>
+    <p className="demo-banner">Preview with made-up sample records. Speak or type a note on the Record tab to try it. Tamil translation and AI summaries work in the real app.</p>
     <Home />
   </>,
 );
